@@ -1,32 +1,51 @@
 import React, { useState } from "react";
 import axios from "axios";
-import { useNavigate} from 'react-router-dom';
-import { Box, Button, Container, TextField, Typography } from '@mui/material';
- 
+import { useNavigate } from 'react-router-dom';
+import { Box, Button, Container, TextField, Typography, IconButton, InputAdornment } from '@mui/material';
+import { Visibility, VisibilityOff } from "@mui/icons-material";
 
 const Login = () => {
-    const [email, setEmail ] = useState('');
-    const [password, setPassword] = useState('');
-    const navigate = useNavigate();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const navigate = useNavigate();
 
-    const handleLogin = async (e) =>{
-        e.preventDefault();
+  const handleLogin = async (e) => {
+    e.preventDefault();
 
-        try{
-            const res = await axios.post('http://localhost:5000/api/login', {email, password});
-            if(res.data.token){
-                localStorage.setItem('token', res.data.token);
-                navigate('/dashboard');
-            }else{
-                console.error('no token recevied');
-            }
-        }catch(e){
-            console.log('Error logging in',e);
+    let valid = true;
+    if (!email) {
+      setEmailError('Email is required');
+      valid = false;
+    } else {
+      setEmailError('');
+    }
+    if (!password) {
+      setPasswordError('password is required');
+      valid = false;
+    } else {
+      setPasswordError('');
+    }
+
+    if (valid) {
+      try {
+        const res = await axios.post('http://localhost:5000/api/login', { email, password });
+        if (res.data.token) {
+          localStorage.setItem('token', res.data.token);
+          navigate('/dashboard');
+        } else {
+          console.error('no token recevied');
         }
-    };
-
-    return(
-        <Container component="main" maxWidth="sm" sx={{display: 'flex', justifyContent:'center'}}>
+      } catch (e) {
+        console.log('Error logging in', e);
+      }
+    }
+  };
+  const handleClickShowPassword = () => setShowPassword(!showPassword);
+  return (
+    <Container component="main" maxWidth="sm" sx={{ display: 'flex', justifyContent: 'center' }}>
       <Box
         sx={{
           marginTop: 8,
@@ -53,6 +72,8 @@ const Login = () => {
             autoFocus
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            error={!!emailError}
+            helperText={emailError}
           />
           <TextField
             margin="normal"
@@ -65,10 +86,23 @@ const Login = () => {
             autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            error={!!passwordError}
+            helperText={passwordError}
+            InputProps={{ endAdornment:(
+            <InputAdornment position="end">
+              <IconButton 
+              aria-label="toggle password visibility" 
+              onClick={handleClickShowPassword}
+              edge="end"> 
+              {showPassword ? <Visibility /> : <VisibilityOff />}
+              </IconButton>
+              </InputAdornment>
+              ),
+             }}
           />
           <Button
             type="submit"
-             fullWidth
+            fullWidth
             variant="contained"
             sx={{ mt: 3, mb: 2 }}
           >
@@ -77,7 +111,7 @@ const Login = () => {
         </Box>
       </Box>
     </Container>
-    );
+  );
 
 
 }

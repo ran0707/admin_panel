@@ -1,95 +1,103 @@
-import React, { useState } from 'react';
-import {Button, TextField, Box, Container, Typography, styled} from '@mui/material'; // Importing the Button component from Material-UI
-import api from '../../utils/api';
-
+import React, {useState} from 'react';
+import {  Box, Typography, AppBar, Toolbar, TextField, Button, Container} from '@mui/material';
+import { Link, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 const CreateContent = () => {
-  const [title, setTitle] = useState('');
-  const [body, setBody] = useState('');
-  const [image, setImage] = useState(null);
+ const [email, setEmail] = useState('');
+ const [password, setPassword] = useState('');
+ const [emailError, setEmailError] = useState('');
+ const [passwordError, setPasswordError] = useState('');
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const formData = new FormData();
-    formData.append('title', title);
-    formData.append('body', body);
-    if (image) {
-      formData.append('image', image);
+ const navigate = useNavigate();
+
+
+ const handleLogin = async (e) =>{
+  e.preventDefault();
+
+
+  let valid = true;
+  if(!email){
+    setEmailError('Email is required');
+    valid = false;
+  }else{
+    setEmailError('');
+  }
+  if(!password){
+    setPasswordError('Password is required');
+    valid = false;
+  }else{
+    setPasswordError('');
+  }
+
+  if(valid){
+    try{
+      const res = await axios.post('http://localhost:5000/api/create-content/sudo-login', {email, password});
+      if(res.data.token){
+        localStorage.setItem('token', res.data.token);
+        navigate('/home-page-main');
+        console.log('login success');
+      }else{
+        console.error('no token recived');
+      }
+    }catch(e){
+      console.log('Error loggin in', e);
     }
+  }
+ };
 
-    try {
-     
-    const response = await api.post('/Content', formData, {
-        headers:{
-            'Content-Type':'multipart/form-data',
-        }
-    });
-      console.log(response.data);
-      // handle success (e.g., clear the form, show a success message)
-    } catch (error) {
-      console.error('Error creating content:', error);
-      // handle error (e.g., show an error message)
-    }
-  };
-
-  const StyledContainer = styled(Container)({
-    marginTop: '2rem',
-    padding:'2rem',
-    backgroundColor:'#ffffff',
-    borderRadius:'10px',
-    boxShadow:'0 3px 6px rgba(0,0,0,0.1)',
-  });
-
-  const StyledTextField = styled(TextField)({
-    marginBottom: '1rem',
-  });
-
- 
 
   return (
-    <StyledContainer maxWidth="md">
-      <Typography variant="h4" gutterBottom>
-        Create Content
-      </Typography>
-      <form onSubmit={handleSubmit}>
-        <StyledTextField
-          label="Title"
-          fullWidth
-          variant="outlined"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          required
-        />
-        <StyledTextField
-          label="Body"
-          fullWidth
-          multiline
-          rows={10}
-          variant="outlined"
-          value={body}
-          onChange={(e) => setBody(e.target.value)}
-          required
-        />
-        <Box mb={2}>
-          <input
-            accept="image/*"
-            style={{ display: 'none' }}
-            id="raised-button-file"
-            type="file"
-            onChange={(e) => setImage(e.target.files[0])}
+    <div>
+      <AppBar position="fixed">
+        <Toolbar>
+          <Typography variant="h3" component="div" sx={{ flexGrow: 1 }}>
+            CreateContent
+          </Typography>
+         <Button color='inherit' LinkComponent={Link} to='/dashboard'>Dashboard</Button>
+        </Toolbar>
+      </AppBar>
+      <Container component="main" maxWidth='sm' sx={{display:'flex', justifyContent:'center'}}>
+      <Box component="form" onSubmit={handleLogin} noValidate sx={{ mt: '150px' , }}>
+          <TextField
+            margin="normal"
+            required
+            fullWidth
+            id="email"
+            label="Email Address"
+            name="email"
+            autoComplete="email"
+            autoFocus
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            error={!!emailError}
+            helperText={emailError}
           />
-          <label htmlFor="raised-button-file">
-            <Button variant="contained" component="span">
-              Upload Image
-            </Button>
-            {image && <Typography variant="body2">{image.name}</Typography>}
-          </label>
+          <TextField
+            margin="normal"
+            required
+            fullWidth
+            name="password"
+            label="Password"
+            type="password"
+            id="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            error={!!passwordError}
+            helperText={passwordError}
+          />
+          <Button
+            type="submit"
+            fullWidth
+            variant="contained"
+            sx={{ mt: 3, mb: 2 }}
+          >
+            Sign In
+          </Button>
         </Box>
-        <Button variant="contained" color="primary" type="submit">
-          Create Content
-        </Button>
-      </form>
-    </StyledContainer>
+        </Container>
+    </div>
   );
 };
 

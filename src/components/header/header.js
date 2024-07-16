@@ -13,7 +13,7 @@ const Header = () => {
   return (
     <AppBar position="static">
       <Toolbar>
-        <Typography variant="h5" sx={{ flexGrow: 2 }}>
+        <Typography variant="h3" sx={{ flexGrow: 2 }}>
           Admin panel
         </Typography>
         <Button color='inherit' LinkComponent={Link} to='/create-content'>createContent</Button>

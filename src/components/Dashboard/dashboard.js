@@ -2,13 +2,16 @@
 import React from 'react';
 import Header from '../header/header';
 import Maintable from '../Table/maintable';
+import { Box } from '@mui/material';
 
 const Dashboard = () => {
   return (
     <div>
       <Header/>
-     <div>
-     <h1>Welcome to the Admin Dashboard</h1>
+     <div >
+      <Box sx={{mx:5}}>
+      <h1>Welcome to the Admin Dashboard</h1>
+      </Box>
      <Maintable/>
      </div>
     </div>
