@@ -143,7 +143,7 @@ const SeasonPest = () => {
       <Toolbar />
       <div style={{ padding: 20 }}>
         <form onSubmit={handleAddPest}>
-          <FormControl style={{ marginRight: 10, minWidth: 120 , position:'sticky'}}>
+          <FormControl style={{ marginRight: 10, position:'sticky'}}>
             <InputLabel>Month</InputLabel>
             <Select
               name="month"
@@ -185,26 +185,24 @@ const SeasonPest = () => {
           <Table stickyHeader aria-label="sticky table">
             <TableHead>
               <TableRow>
-                <TableCell style={{fontWeight:"bold"}}>Month Name</TableCell>
-                {/* <TableCell>ID</TableCell> */}
-                <TableCell style={{fontWeight:"bold"}}>Created Date</TableCell>
-                <TableCell style={{fontWeight:"bold"}}>Pest Name</TableCell>
+                <TableCell style={{fontWeight:"bold", maxWidth: 20 }}>Month Name</TableCell>
+                <TableCell style={{fontWeight:"bold", maxWidth: 20 }}>Created Date</TableCell>
+                <TableCell style={{fontWeight:"bold",maxWidth: 20 }}>Pest Name</TableCell>
                 <TableCell style={{fontWeight:"bold"}}>Images</TableCell>
-                <TableCell style={{fontWeight:"bold"}}>Actions</TableCell>
+                <TableCell style={{fontWeight:"bold", maxWidth: 20 }}>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {months.map((month) => (
                 <TableRow key={month}>
                   <TableCell>{month}</TableCell>
-                  {/* <TableCell>{pests[month]?._id}</TableCell> */}
                   <TableCell>{pests[month] && new Date(pests[month].createdDate).toLocaleDateString()}</TableCell>
                   <TableCell>{pests[month]?.pestName}</TableCell>
                   <TableCell>
                     {pests[month]?.images.map((image, index) => (
                       <img
                         key={index}
-                        src={`uploads/${image}`}
+                        src={`http://localhost:5000/api/pests/${pests[month]._id}/image/${image._id}`}
                         alt={pests[month].pestName}
                         width="50"
                         style={{ marginRight: 10 }}

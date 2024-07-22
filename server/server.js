@@ -27,11 +27,12 @@ app.use(bodyParser.json());
 
 //create upload directory 
 
-const uploadDir = path.join(__dirname, 'uploads');
-if(!fs.existsSync(uploadDir)){
-  fs.mkdirSync(uploadDir);
-}
+// const uploadDir = path.join(__dirname, 'uploads');
+// if(!fs.existsSync(uploadDir)){
+//   fs.mkdirSync(uploadDir);
+// }
 
+// app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 
 
@@ -50,31 +51,17 @@ const secretkey = 'secretkey';
 
 
 
-// Middleware to verify JWT
-// const verifyToken = (req, res, next) => {
-//   const token = req.headers.authorization; // Extract token from "Bearer <token>"
-
-//   if (!token) return res.status(403).send('Token is required');
-
-//   jwt.verify(token, secretkey, (err, decode) => {
-//     if (err) return res.status(403).send('Failed to authenticate');
-
-//     req.decode = decode;
-//     next();
-//   });
-// };
-
 // for file upload 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) =>{
-    cb(null, 'uploads/');
-  },
-  filename: (req, file, cb)=>{
-    cb(null, `${Date.now()}-${file.originalname}`);
-  }
-});
+// const storage = multer.diskStorage({
+//   destination: (req, file, cb) =>{
+//     cb(null, 'uploads/');
+//   },
+//   filename: (req, file, cb)=>{
+//     cb(null, `${Date.now()}-${file.originalname}`);
+//   }
+// });
 
-const upload = multer({storage});
+const upload = multer({storage:multer.memoryStorage()});
 
 //login api
 
@@ -127,6 +114,30 @@ app.get('/api/pests', verifyToken, async(req, res)=>{
   }
 });
 
+app.get('/api/pests/:id/image/:imageId', async (req, res) => {
+  try {
+    const { id, imageId } = req.params;
+    const pest = await Pests.findById(id);
+    if (pest) {
+      const image = pest.images.id(imageId);
+      if (image) {
+        res.contentType(image.contentType);
+        res.send(image.data);
+      } else {
+        res.status(404).send('Image not found');
+      }
+    } else {
+      res.status(404).send('Pest not found');
+    }
+  } catch (e) {
+    console.error('Error fetching image:', e);
+    res.status(500).send('Error fetching image');
+  }
+});
+
+
+
+
 //create and update the content
 
 app.post('/api/Content', verifyToken, upload.single('image'), (req, res) =>{
@@ -151,8 +162,10 @@ app.post('/api/Content', verifyToken, upload.single('image'), (req, res) =>{
 
 app.post('/api/pests', verifyToken, upload.array('images'), async(req, res)=>{
   const {id, pestName, month} = req.body;
-  const images = req.files.map(file => `/uploads/${file.filename}`);
-
+  const images = req.files.map(file => ({
+    data:file.buffer,
+    contentType: file.mimetype,
+  }));
   try{
     if(id){
       const pests = await Pests.findById(id);

@@ -5,7 +5,7 @@ const PestSchema = new mongoose.Schema({
   pestName: String,
   month: String,
   createdDate: {type: Date, default: Date.now},
-  images: [String],
+  images: [{data: Buffer, contentType: String}],
 });
 
 const Pests = mongoose.model('Pests', PestSchema);
