@@ -72,15 +72,67 @@ const SeasonPest = () => {
     }
   };
 
+  // const handleAddPest = async (e) => {
+  //   e.preventDefault();
+  //   const formData = new FormData();
+  //   formData.append("pestName", form.pestName);
+  //   formData.append("month", form.month);
+
+  //   let allImageBase64 = " ";
+
+  //   const handleImageLoad = (event) =>{
+  //     const base64String = event.target.result.split(',')[1];
+  //     allImageBase64 += base64String;
+  //   };
+
+  //   if (form.images.length > 0){
+  //     for(const image of form.images){
+  //       const reader = new FileReader();
+
+    
+  //       reader.onload = handleImageLoad;
+  //       reader.readAsDataURL(image);
+  //     }
+  //     formData.append("images", allImageBase64);
+  //   }
+
+  //   try {
+  //     const token = localStorage.getItem('token');
+  //     if (editMonth) {
+  //       formData.append("id", pests[editMonth]._id);
+  //       await axios.post(`http://localhost:5000/api/pests`, formData, {
+  //         headers: {
+  //           Authorization: `Bearer ${token}`,
+  //           'Content-Type': 'multipart/form-data',
+  //         }
+  //       });
+  //     } else {
+  //       await axios.post("http://localhost:5000/api/pests", formData, {
+  //         headers: {
+  //           Authorization: `Bearer ${token}`,
+  //           'Content-Type': 'multipart/form-data',
+  //         }
+  //       });
+  //     }
+  //     fetchPests();
+  //     setForm({ pestName: "", images: [], month: "" });
+  //     setEditMonth(null);
+  //   } catch (error) {
+  //     console.error("Error adding/updating pest:", error);
+  //   }
+  // };
+
+
   const handleAddPest = async (e) => {
     e.preventDefault();
     const formData = new FormData();
     formData.append("pestName", form.pestName);
     formData.append("month", form.month);
-    form.images.forEach((image) => {
-      formData.append("images", image);
+  
+    form.images.forEach((image, index) => {
+      formData.append("images", image, image.name);
     });
-
+  
     try {
       const token = localStorage.getItem('token');
       if (editMonth) {
@@ -106,6 +158,7 @@ const SeasonPest = () => {
       console.error("Error adding/updating pest:", error);
     }
   };
+  
 
   const handleEditPest = (month) => {
     const pestToEdit = pests[month];

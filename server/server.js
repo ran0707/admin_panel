@@ -10,30 +10,23 @@ const fs = require('fs');
 
 const verifyToken = require('./middleware/verifyToken');
 
-const Item = require('./models/item'); // Import the Item model
+const Item = require('./models/item');
 const User = require('./models/user');
 const Content = require('./models/dashboardModel');
 const Pests = require('./models/seasonPest');
-//const { upload } = require('@testing-library/user-event/dist/upload');
+const Vendor = require('./models/vendors');
+const { error } = require('console');
+
+
 
 const app = express();
 
 
 //predefind email and password for admin login
 const users = [{ email: 'admin@example.com', password: 'Admin@123' }]; // Dummy user data
-const sudos = [{email:'developers@example.com', password:'Green@123'}]
+const sudos = [{ email: 'developers@example.com', password: 'Green@123' }]
 app.use(cors());
 app.use(bodyParser.json());
-
-//create upload directory 
-
-// const uploadDir = path.join(__dirname, 'uploads');
-// if(!fs.existsSync(uploadDir)){
-//   fs.mkdirSync(uploadDir);
-// }
-
-// app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
 
 
 //database connection 
@@ -51,155 +44,280 @@ const secretkey = 'secretkey';
 
 
 
-// for file upload 
-// const storage = multer.diskStorage({
-//   destination: (req, file, cb) =>{
-//     cb(null, 'uploads/');
-//   },
-//   filename: (req, file, cb)=>{
-//     cb(null, `${Date.now()}-${file.originalname}`);
-//   }
+const upload = multer({ storage: multer.memoryStorage() });
+
+
+//GET methods
+app.get('/api/users', verifyToken, async (req, res) => {
+  try {
+    const users = await User.find({});
+    res.json(users);
+  } catch (e) {
+    console.error('error fetching users', e);
+    res.status(500).send('error fetching users');
+  }
+}); //fetch the data of mobile app - usersDetails
+
+app.get('/api/pests', async (req, res) => {
+  try {
+    console.log('Recived request for pests data');
+    const pests = await Pests.find({});
+    if(!pests || Pests.length === 0){
+      return res.status(404).json({error:"no pests found"});
+    }
+    console.log('Fetched pests data:', pests);
+    res.json(pests);
+  } catch (e) {
+    console.error('Error Fetching pests', e);
+    res.status(500).send('Error fetching pests');
+  }
+}); 
+//show the season based pests in Admin panel
+// app.get('/api/pests', async (req,res)=>{
+
+//   console.log('Received request for pests data');
+//   const pests = await Pests.find({} , (err, pests)=>{
+//     if(err){
+//       console.error('Error fetching pests data:', err);
+//       return res.status(500).json({error:"Error fetching pests data"});
+//     }
+//     console.log('Fetched pest data:', pests);
+//     res.json(pests);
+//   });
 // });
 
-const upload = multer({storage:multer.memoryStorage()});
+app.get('/api/pests/:cardId/image/:imageId', async (req, res) => {
+  try {
+    const { cardId, imageId } = req.params;
+    const pest = await Pests.findById(cardId);
 
-//login api
+    if (pest) {
+      const image = pest.images.id(imageId);
+    
+
+
+      if(image){
+        res.contentType(image.contentType);
+        res.send(image.data);
+        return res.status(404).send('Image not found');
+      }else{
+        if(!res.headersSent){
+          res.status(404).send('Image not found');
+        }
+        
+      }
+
+    }else{
+        if(!res.headersSent){
+          res.status(404).send('pest not found');
+        }
+     
+    }
+  
+  } catch (e) {
+    console.error('Error fetching image:', e);
+    if(!res.headersSent){
+      res.status(500).send('Error fetching image');
+    }
+  }
+});
+
+app.get('/api/vendors', verifyToken, async (req, res) => {
+
+  try {
+    const vendor = await Vendor.find({});
+    res.json(vendor);
+  } catch (e) {
+    console.error('Error fetching vendors:', e);
+    res.status(500).send('Error fetching vendors');
+  }
+}); // get all vendors
+
+app.get('/api/vendors/:id', verifyToken, async (req, res) => {
+
+  try {
+    const vendor = await Vendor.findById(req.params.id);
+    if (vendor) {
+      res.json(vendor);
+    } else {
+      res.status(404).send('vendor not found');
+    }
+
+  } catch (e) {
+    console.error('Error fetching vendors:', e);
+    res.status(500).send('Error fetching vendor');
+  }
+
+});
+
+
+//PUT methods
+
+
+app.put('/api/vendors/:id', verifyToken, async (req, res) => {
+
+  const { name, imageUrl, description, rating } = req.body;
+
+  try {
+    const vendor = await Vendor.findByIdAndUpdate(
+      req.params.id,
+      { name, imageUrl, description, rating },
+      { new: true, runValidators: true }
+    );
+    if (vendor) {
+      res.json(vendor);
+    } else {
+      res.status(404).send('Vendors not found');
+    }
+  } catch (e) {
+    console.error('Error updating vendors:', e);
+    res.status(500).send('Error updating vendors');
+  }
+});
+
+
+//POST methods
 
 app.post('/api/login', (req, res) => {
   const { email, password } = req.body;
   const user = users.find((u) => u.email === email && u.password === password);
 
   if (user) {
-    const token = jwt.sign({ email }, 'secretkey', { expiresIn: '4h' });
+    const expirationTime = Math.floor(Date.now() / 1000) + (3 * 30 * 24 * 60 * 60);
+    const token = jwt.sign({ email }, 'secretkey', { expiresIn: expirationTime });
     res.json({ token });
-    console.log({token});
+    console.log({ token });
   } else {
     console.log('invaild credentials');
     res.status(401).send('Invalid credentials');
   }
-});
+}); // Admin panel login auth
 
 app.post('/api/create-content/sudo-login', (req, res) => {
   const { email, password } = req.body;
   const user = sudos.find((u) => u.email === email && u.password === password);
 
   if (user) {
-    const token = jwt.sign({ email }, 'secretkey', { expiresIn: '1h' });
+    const expirationTime = Math.floor(Date.now() / 1000) + (3 * 30 * 24 * 60 * 60);
+    const token = jwt.sign({ email }, 'secretkey', { expiresIn: expirationTime });
     res.json({ token });
-    console.log({token});
+    console.log({ token });
   } else {
     console.log('invaild credentials');
     res.status(401).send('Invalid credentials');
   }
-});
-//fetching the data form database to display in admin panel
-
-app.get('/api/users', verifyToken, async (req, res)=>{
-   try{
-    const users = await User.find({});
-    res.json(users);
-   }catch(e){
-    console.error('error fetching users', e);
-    res.status(500).send('error fetching users');
-   }
-});
-
-app.get('/api/pests', verifyToken, async(req, res)=>{
-  try{
-    const pests = await Pests.find({});
-    res.json(pests);
-  }catch(e){
-    console.error('Error Fetching pests', e);
-    res.status(500).send('Error fetching pests');
-  }
-});
-
-app.get('/api/pests/:id/image/:imageId', async (req, res) => {
-  try {
-    const { id, imageId } = req.params;
-    const pest = await Pests.findById(id);
-    if (pest) {
-      const image = pest.images.id(imageId);
-      if (image) {
-        res.contentType(image.contentType);
-        res.send(image.data);
-      } else {
-        res.status(404).send('Image not found');
-      }
-    } else {
-      res.status(404).send('Pest not found');
-    }
-  } catch (e) {
-    console.error('Error fetching image:', e);
-    res.status(500).send('Error fetching image');
-  }
-});
+}); //Admin panel - createcontent page login auth
 
 
-
-
-//create and update the content
-
-app.post('/api/Content', verifyToken, upload.single('image'), (req, res) =>{
-  const {title, body} = req.body;
-  const image = req.file ? req.file.filename: '';
+app.post('/api/Content', verifyToken, upload.single('image'), (req, res) => {
+  const { title, body } = req.body;
+  const image = req.file ? req.file.filename : '';
 
   const newContent = new Content({
     title,
-    body, 
+    body,
     image
   });
 
-  newContent.save((err)=>{
-    if(err) {
+  newContent.save((err) => {
+    if (err) {
       console.error('error saving content:', e);
       return res.status(500).send('Error saving..');
     }
     res.status(201).send('saved successfully');
   });
-});
+}); // Add the pests data in Admin panel
 
 
-app.post('/api/pests', verifyToken, upload.array('images'), async(req, res)=>{
-  const {id, pestName, month} = req.body;
+app.post('/api/pests', verifyToken, upload.array('images'), async (req, res) => {
+  const { id, pestName, month } = req.body;
   const images = req.files.map(file => ({
-    data:file.buffer,
+    data: file.buffer,
     contentType: file.mimetype,
   }));
-  try{
-    if(id){
-      const pests = await Pests.findById(id);
-      if(pests){
-        pests.pestName = pestName;
-        pests.month = month;
-        pests.images = images.length ? images : pests.images;
-        await pests.save();
-        res.json(pests);
-      }else{
-        res.status(404).send('pest not found');
+
+  try {
+    if (id) {
+      const pest = await Pests.findById(id);
+      if (pest) {
+        pest.pestName = pestName;
+        pest.month = month;
+        pest.images = images.length ? images : pest.images;
+        await pest.save();
+        res.json(pest);
+      } else {
+        res.status(404).send('Pest not found');
       }
-    }else{
-      const newPests = new Pests({pestName, month, images});
-      await newPests.save();
-      res.json(newPests);
+    } else {
+      const newPest = new Pests({ pestName, month, images });
+      await newPest.save();
+      res.json(newPest);
     }
-  }catch(e){
+  } catch (e) {
     console.error('Error saving pest:', e);
     res.status(500).send('Error saving pest');
   }
 });
 
-//deleteing content
 
-app.delete('/api/pests/:id', verifyToken, async(req, res) => {
-  try{
+app.post('/api/vendors', verifyToken, async (req, res) => {
+  const { name, imageUrl, description, rating } = req.body;
+
+  const newVendor = new Vendor({
+    name,
+    imageUrl,
+    description,
+    rating
+  });
+
+  try {
+    const savedVendor = await newVendor.save();
+    res.status(201).json(savedVendor);
+  } catch (e) {
+    console.error('Error creating vendor:', e);
+    if (e.errors) {
+      const validationErrors = {};
+      for (const field in e.errors) {
+        validationErrors[field] = e.errors[field].message;
+      }
+      res.status(400).json({ message: 'validation error', errors: validationErrors });
+    } else {
+      res.status(500).send('Error creating vendor');
+    }
+
+  }
+});
+
+
+
+//DELETE methods
+app.delete('/api/pests/:id', verifyToken, async (req, res) => {
+  try {
     await Pests.findByIdAndDelete(req.params.id);
-    res.json({message: 'pest deleted'});
-  }catch(e){
+    res.json({ message: 'pest deleted' });
+  } catch (e) {
     console.error('Error deleteing pest:', e);
     res.status(500).send('Error deleting pest');
   }
+}); // delete the pests details 
+
+
+
+app.delete('/api/vendors/:id', verifyToken, async (req, res) => {
+
+  try {
+
+    await Vendor.findByIdAndDelete(req.params.id);
+    res.json({ message: 'vendor deleted' });
+  } catch (e) {
+    console.error('Error deleting vendor', e);
+    res.status(500).send('Error deleting vendor');
+  }
+
 });
+
+
+
 
 //server port status
 
