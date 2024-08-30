@@ -31,6 +31,8 @@ const VendorsMain = () => {
   });
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [vendorToDelete, setVendorToDelete] = useState(null);
 
   useEffect(() => {
     fetchVendors();
@@ -93,18 +95,29 @@ const VendorsMain = () => {
     setOpen(true);
   };
 
-  const handleDeleteVendor = async (id) => {
+  const handleDeleteVendor = async () => {
     const token = localStorage.getItem("token");
     try {
-      await axios.delete(`http://localhost:5000/api/vendors/${id}`, {
+      await axios.delete(`http://localhost:5000/api/vendors/${vendorToDelete}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
       fetchVendors();
+      handleCloseDeleteDialog();
     } catch (error) {
       console.error("Error deleting vendor:", error);
     }
+  };
+
+  const handleOpenDeleteDialog = (id) => {
+    setVendorToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleCloseDeleteDialog = () => {
+    setDeleteDialogOpen(false);
+    setVendorToDelete(null);
   };
 
   const handleOpen = () => {
@@ -164,7 +177,7 @@ const VendorsMain = () => {
                     <IconButton onClick={() => handleEditVendor(vendor)}>
                       <Edit />
                     </IconButton>
-                    <IconButton onClick={() => handleDeleteVendor(vendor._id)}>
+                    <IconButton onClick={() => handleOpenDeleteDialog(vendor._id)}>
                       <Delete />
                     </IconButton>
                   </TableCell>
@@ -216,6 +229,17 @@ const VendorsMain = () => {
             </Button>
             <Button onClick={handleSaveVendor} color="primary">
               Save
+            </Button>
+          </DialogActions>
+        </Dialog>
+        <Dialog open={deleteDialogOpen} onClose={handleCloseDeleteDialog}>
+          <DialogTitle>Are you sure you want to delete this vendor?</DialogTitle>
+          <DialogActions>
+            <Button onClick={handleCloseDeleteDialog} color="primary">
+              Cancel
+            </Button>
+            <Button onClick={handleDeleteVendor} color="secondary">
+              Delete
             </Button>
           </DialogActions>
         </Dialog>

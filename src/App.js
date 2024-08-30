@@ -7,11 +7,12 @@ import Dashboard from './components/Dashboard/dashboard';
 import ProtectedRoute from "./components/ProtectedRoute";
 import UserTabel from "./components/Dashboard/UserTabel";
 import CreateContent from "./components/createContent/content";
-import VendorsMain from "./components/createContent/vendors";
+import VendorsMain from "./components/createContent/vendors/vendors";
 import CultivationMain from "./components/createContent/cultivationPage/cultivationMain";
 import HomePageMain from "./components/createContent/homePage/homePageMain";
 import RecentReport from "./components/createContent/homePage/recentReport";
 import SeasonPest from "./components/createContent/homePage/seasonPest";
+import CommunityPageManager from "./components/createContent/community/communityPage";
 
 
 
@@ -30,6 +31,7 @@ function App() {
         <Route path="/home-page-main" element={<HomePageMain/>}/>
         <Route path="/recentreport-page" element={<RecentReport/>}/>
         <Route path="/seasonpest-page" element={<SeasonPest/>}/>
+        <Route path="/cemillia-community" element={<CommunityPageManager/>}/>
         <Route exact path="/" element={<Login/>}/>
       </Routes>
     </Router>

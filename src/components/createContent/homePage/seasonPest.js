@@ -17,6 +17,11 @@ import {
   FormControl,
   InputLabel,
   Select,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
 } from "@mui/material";
 import { Delete, Edit } from "@mui/icons-material";
 import axios from "axios";
@@ -34,6 +39,8 @@ const SeasonPest = () => {
     images: [],
     month: "",
   });
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [pestToDelete, setPestToDelete] = useState(null);
 
   useEffect(() => {
     fetchPests();
@@ -72,67 +79,16 @@ const SeasonPest = () => {
     }
   };
 
-  // const handleAddPest = async (e) => {
-  //   e.preventDefault();
-  //   const formData = new FormData();
-  //   formData.append("pestName", form.pestName);
-  //   formData.append("month", form.month);
-
-  //   let allImageBase64 = " ";
-
-  //   const handleImageLoad = (event) =>{
-  //     const base64String = event.target.result.split(',')[1];
-  //     allImageBase64 += base64String;
-  //   };
-
-  //   if (form.images.length > 0){
-  //     for(const image of form.images){
-  //       const reader = new FileReader();
-
-    
-  //       reader.onload = handleImageLoad;
-  //       reader.readAsDataURL(image);
-  //     }
-  //     formData.append("images", allImageBase64);
-  //   }
-
-  //   try {
-  //     const token = localStorage.getItem('token');
-  //     if (editMonth) {
-  //       formData.append("id", pests[editMonth]._id);
-  //       await axios.post(`http://localhost:5000/api/pests`, formData, {
-  //         headers: {
-  //           Authorization: `Bearer ${token}`,
-  //           'Content-Type': 'multipart/form-data',
-  //         }
-  //       });
-  //     } else {
-  //       await axios.post("http://localhost:5000/api/pests", formData, {
-  //         headers: {
-  //           Authorization: `Bearer ${token}`,
-  //           'Content-Type': 'multipart/form-data',
-  //         }
-  //       });
-  //     }
-  //     fetchPests();
-  //     setForm({ pestName: "", images: [], month: "" });
-  //     setEditMonth(null);
-  //   } catch (error) {
-  //     console.error("Error adding/updating pest:", error);
-  //   }
-  // };
-
-
   const handleAddPest = async (e) => {
     e.preventDefault();
     const formData = new FormData();
     formData.append("pestName", form.pestName);
     formData.append("month", form.month);
-  
+
     form.images.forEach((image, index) => {
       formData.append("images", image, image.name);
     });
-  
+
     try {
       const token = localStorage.getItem('token');
       if (editMonth) {
@@ -158,7 +114,6 @@ const SeasonPest = () => {
       console.error("Error adding/updating pest:", error);
     }
   };
-  
 
   const handleEditPest = (month) => {
     const pestToEdit = pests[month];
@@ -170,15 +125,26 @@ const SeasonPest = () => {
     setEditMonth(month);
   };
 
-  const handleDeletePest = async (month) => {
+  const handleOpenDeleteDialog = (month) => {
+    setPestToDelete(month);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleCloseDeleteDialog = () => {
+    setDeleteDialogOpen(false);
+    setPestToDelete(null);
+  };
+
+  const handleDeletePest = async () => {
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`http://localhost:5000/api/pests/${pests[month]._id}`, {
+      await axios.delete(`http://localhost:5000/api/pests/${pests[pestToDelete]._id}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         }
       });
       fetchPests();
+      handleCloseDeleteDialog();
     } catch (error) {
       console.error("Error deleting pest:", error);
     }
@@ -196,7 +162,7 @@ const SeasonPest = () => {
       <Toolbar />
       <div style={{ padding: 20 }}>
         <form onSubmit={handleAddPest}>
-          <FormControl style={{ marginRight: 10, position:'sticky'}}>
+          <FormControl style={{ marginRight: 10 }}>
             <InputLabel>Month</InputLabel>
             <Select
               name="month"
@@ -238,11 +204,11 @@ const SeasonPest = () => {
           <Table stickyHeader aria-label="sticky table">
             <TableHead>
               <TableRow>
-                <TableCell style={{fontWeight:"bold", maxWidth: 20 }}>Month Name</TableCell>
-                <TableCell style={{fontWeight:"bold", maxWidth: 20 }}>Created Date</TableCell>
-                <TableCell style={{fontWeight:"bold",maxWidth: 20 }}>Pest Name</TableCell>
-                <TableCell style={{fontWeight:"bold"}}>Images</TableCell>
-                <TableCell style={{fontWeight:"bold", maxWidth: 20 }}>Actions</TableCell>
+                <TableCell style={{ fontWeight: "bold", maxWidth: 20 }}>Month Name</TableCell>
+                <TableCell style={{ fontWeight: "bold", maxWidth: 20 }}>Created Date</TableCell>
+                <TableCell style={{ fontWeight: "bold", maxWidth: 20 }}>Pest Name</TableCell>
+                <TableCell style={{ fontWeight: "bold" }}>Images</TableCell>
+                <TableCell style={{ fontWeight: "bold", maxWidth: 20 }}>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -266,7 +232,7 @@ const SeasonPest = () => {
                     <IconButton onClick={() => handleEditPest(month)}>
                       <Edit />
                     </IconButton>
-                    <IconButton onClick={() => handleDeletePest(month)}>
+                    <IconButton onClick={() => handleOpenDeleteDialog(month)}>
                       <Delete />
                     </IconButton>
                   </TableCell>
@@ -276,6 +242,28 @@ const SeasonPest = () => {
           </Table>
         </TableContainer>
       </div>
+
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={handleCloseDeleteDialog}
+        aria-labelledby="delete-dialog-title"
+        aria-describedby="delete-dialog-description"
+      >
+        <DialogTitle id="delete-dialog-title">Confirm Deletion</DialogTitle>
+        <DialogContent>
+          <DialogContentText id="delete-dialog-description">
+            Are you sure you want to delete this pest?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDeleteDialog} color="primary">
+            Cancel
+          </Button>
+          <Button onClick={handleDeletePest} color="secondary">
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </div>
   );
 };

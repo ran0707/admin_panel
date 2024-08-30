@@ -15,6 +15,7 @@ const User = require('./models/user');
 const Content = require('./models/dashboardModel');
 const Pests = require('./models/seasonPest');
 const Vendor = require('./models/vendors');
+const Recommendation = require('./models/recommendation');
 const { error } = require('console');
 
 
@@ -151,6 +152,18 @@ app.get('/api/vendors/:id', verifyToken, async (req, res) => {
 });
 
 
+
+app.get('/api/recom-treatment/recommendation', async (req, res) => {
+
+  try{
+      const recommendations = await Recommendation.find({});
+      res.json(recommendations);
+  }catch(e){
+      console.error('Error fetching recommendations', e);
+      res.status(500).send('Error fetching recommendation');
+  }
+});
+
 //PUT methods
 
 
@@ -172,6 +185,29 @@ app.put('/api/vendors/:id', verifyToken, async (req, res) => {
   } catch (e) {
     console.error('Error updating vendors:', e);
     res.status(500).send('Error updating vendors');
+  }
+});
+
+app.put('/api/recom-treatment/:id', verifyToken, async (req, res)=>{
+
+  const {id} = req.params;
+  const {label, symptoms, recommendation} = req.body;
+
+  try{
+    const updatedRecommendation = await Recommendation.findByIdAndUpdate(
+      id, 
+      {label, symptoms, recommendation},
+      {new: true}
+    );
+
+    if(!updatedRecommendation){
+      return res.status(400).send('Recommendation not found');
+    }
+
+    res.json(updatedRecommendation);
+  }catch(e){
+     console.error('Error updating recommendation', e);
+     res.status(500).send('Error updating recommendation');
   }
 });
 
@@ -290,6 +326,21 @@ app.post('/api/vendors', verifyToken, async (req, res) => {
 
 
 
+app.post('/api/recom-treatment', verifyToken, async (req, res) => {
+
+  const { label, symptoms, recommendation } = req.body;
+  const newRecommendation = new Recommendation({ label, symptoms, recommendation });
+
+  try {
+    const savedRecommendation = await newRecommendation.save();
+    res.status(201).json(savedRecommendation);
+  } catch (e) {
+    console.error('Error saving recommendation', e);
+    res.status(500).send('Error saving recommendation');
+  }
+});
+
+
 //DELETE methods
 app.delete('/api/pests/:id', verifyToken, async (req, res) => {
   try {
@@ -316,6 +367,24 @@ app.delete('/api/vendors/:id', verifyToken, async (req, res) => {
 
 });
 
+
+app.delete('/api/recom-treatment/:id', verifyToken, async (req, res)=>{
+
+  const {id} = req.params;
+
+  try{
+    const deletedRecommendation = await Recommendation.findByIdAndDelete(id);
+    
+    if(!deletedRecommendation){
+      return res.status(404).send('Recommendation not found');
+    }
+
+    res.json({message: 'Recommendation deleted successfully'});
+  }catch(e){
+    console.error('Error deleting recommendation', e);
+    res.status(500).send('Error deleting recommendation');
+  }
+});
 
 
 
